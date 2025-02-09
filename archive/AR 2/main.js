@@ -1,20 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
-// Создание сцены
+// Создаём сцену
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB); // Голубое небо
-
-// Камера
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.5, 5);
-
-// Рендерер с поддержкой WebXR
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.xr.enabled = true; // Включаем поддержку WebXR
+renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 // Добавляем AR-кнопку
@@ -24,66 +17,47 @@ document.body.appendChild(ARButton.createButton(renderer));
 const light = new THREE.DirectionalLight(0xffffff, 1.5);
 light.position.set(5, 10, 7.5);
 scene.add(light);
+scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
-const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-scene.add(ambientLight);
-
-// Загрузка модели
+// Загружаем модель
 const loader = new GLTFLoader();
-let mixer = null;
 let model = null;
 
 loader.load(
-  'ANIME.glb', // Укажи путь к модели
+  'ANIME.glb',
   (gltf) => {
     model = gltf.scene;
+    model.visible = false; // Сначала скрываем модель, чтобы разместить на плоскости
+    model.scale.set(0.5, 0.5, 0.5);
     scene.add(model);
-
-    // Настройка позиции и масштаба
-    model.position.set(0, 0, -2); // Чуть дальше от пользователя
-    model.scale.set(1, 1, 1);
-
-    console.log('Модель загружена:', model);
-
-    // Анимация
-    if (gltf.animations.length > 0) {
-      mixer = new THREE.AnimationMixer(model);
-      gltf.animations.forEach((clip) => {
-        mixer.clipAction(clip).play();
-      });
-    }
   },
-  (xhr) => {
-    console.log(`Загрузка: ${((xhr.loaded / xhr.total) * 100).toFixed(2)}%`);
-  },
-  (error) => {
-    console.error('Ошибка загрузки модели:', error);
-  }
+  undefined,
+  (error) => console.error('Ошибка загрузки модели:', error)
 );
 
-// Контролы камеры (работают только в 3D-режиме, в AR не нужны)
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+// Настраиваем hit-test для AR
+let hitTestSource = null;
+let hitTestSourceRequested = false;
 
-// Обработчик изменения размера окна
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// Анимация сцены
-const clock = new THREE.Clock();
-
-function animate() {
-  renderer.setAnimationLoop(() => {
-    if (mixer) {
-      mixer.update(clock.getDelta());
+function onXRFrame(time, frame) {
+  if (model && model.visible === false) {
+    const session = renderer.xr.getSession();
+    if (session && frame) {
+      const referenceSpace = renderer.xr.getReferenceSpace();
+      const viewerPose = frame.getViewerPose(referenceSpace);
+      if (viewerPose) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults.length > 0) {
+          const hit = hitTestResults[0];
+          const pose = hit.getPose(referenceSpace);
+          model.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
+          model.visible = true; // Показываем модель
+        }
+      }
     }
-
-    controls.update();
-    renderer.render(scene, camera);
-  });
+  }
+  renderer.render(scene, camera);
 }
 
-animate();
+// Запускаем анимацию
+renderer.setAnimationLoop(onXRFrame);
