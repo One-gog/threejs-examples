@@ -2,37 +2,45 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// Создание сцены, камеры и рендера
+// Создание сцены
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB); // Голубое небо
+
+// Камера
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1.5, 5);
-scene.background = new THREE.Color(0x87CEEB);
 
-
-const renderer = new THREE.WebGLRenderer();
+// Рендерер
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Освещение
-const light = new THREE.DirectionalLight(0x0000ff, 1);
+const light = new THREE.DirectionalLight(0xffffff, 1.5); // Белый цвет
 light.position.set(5, 10, 7.5);
 scene.add(light);
 
 const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
 scene.add(ambientLight);
 
-// Загрузка модели GLB
+// Загрузка модели
 const loader = new GLTFLoader();
-let mixer; // Переменная для управления анимацией
+let mixer = null;
 
 loader.load(
-  'ANIME.glb', // Укажите путь к вашей модели
+  'ANIME.glb', // Укажи правильный путь к файлу
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
 
-    // Настройка анимации
-    if (gltf.animations && gltf.animations.length) {
+    // Настройка позиции и масштаба
+    model.position.set(0, 0, 0);
+    model.scale.set(1, 1, 1);
+
+    console.log('Модель загружена:', model);
+
+    // Обработка анимации
+    if (gltf.animations.length > 0) {
       mixer = new THREE.AnimationMixer(model);
       gltf.animations.forEach((clip) => {
         mixer.clipAction(clip).play();
@@ -40,23 +48,30 @@ loader.load(
     }
   },
   (xhr) => {
-    console.log(`Загрузка: ${(xhr.loaded / xhr.total) * 100}% завершено`);
+    console.log(`Загрузка: ${((xhr.loaded / xhr.total) * 100).toFixed(2)}%`);
   },
   (error) => {
-    console.error('Ошибка при загрузке модели:', error);
+    console.error('Ошибка загрузки модели:', error);
   }
 );
 
-// Контролы
+// Контролы камеры
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
 
-// Анимация рендера
+// Обработчик изменения размера окна
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Анимация сцены
 const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
 
-  // Обновление миксера анимации
   if (mixer) {
     mixer.update(clock.getDelta());
   }
@@ -64,8 +79,5 @@ function animate() {
   controls.update();
   renderer.render(scene, camera);
 }
-
-
-
 
 animate();
