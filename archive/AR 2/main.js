@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
 // Создание сцены
 const scene = new THREE.Scene();
@@ -10,13 +11,17 @@ scene.background = new THREE.Color(0x87CEEB); // Голубое небо
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1.5, 5);
 
-// Рендерер
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// Рендерер с поддержкой WebXR
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true; // Включаем поддержку WebXR
 document.body.appendChild(renderer.domElement);
 
+// Добавляем AR-кнопку
+document.body.appendChild(ARButton.createButton(renderer));
+
 // Освещение
-const light = new THREE.DirectionalLight(0xffffff, 1.5); // Белый цвет
+const light = new THREE.DirectionalLight(0xffffff, 1.5);
 light.position.set(5, 10, 7.5);
 scene.add(light);
 
@@ -26,20 +31,21 @@ scene.add(ambientLight);
 // Загрузка модели
 const loader = new GLTFLoader();
 let mixer = null;
+let model = null;
 
 loader.load(
-  'ANIME.glb', // Укажи правильный путь к файлу
+  'ANIME.glb', // Укажи путь к модели
   (gltf) => {
-    const model = gltf.scene;
+    model = gltf.scene;
     scene.add(model);
 
     // Настройка позиции и масштаба
-    model.position.set(0, 0, 0);
+    model.position.set(0, 0, -2); // Чуть дальше от пользователя
     model.scale.set(1, 1, 1);
 
     console.log('Модель загружена:', model);
 
-    // Обработка анимации
+    // Анимация
     if (gltf.animations.length > 0) {
       mixer = new THREE.AnimationMixer(model);
       gltf.animations.forEach((clip) => {
@@ -55,7 +61,7 @@ loader.load(
   }
 );
 
-// Контролы камеры
+// Контролы камеры (работают только в 3D-режиме, в AR не нужны)
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
@@ -70,14 +76,14 @@ window.addEventListener('resize', () => {
 const clock = new THREE.Clock();
 
 function animate() {
-  requestAnimationFrame(animate);
+  renderer.setAnimationLoop(() => {
+    if (mixer) {
+      mixer.update(clock.getDelta());
+    }
 
-  if (mixer) {
-    mixer.update(clock.getDelta());
-  }
-
-  controls.update();
-  renderer.render(scene, camera);
+    controls.update();
+    renderer.render(scene, camera);
+  });
 }
 
 animate();
