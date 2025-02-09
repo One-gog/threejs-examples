@@ -1,71 +1,71 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// Создание сцены
+// Создание сцены, камеры и рендера
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera();
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 1.5, 5);
+scene.background = new THREE.Color(0x87CEEB);
+
+
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// Добавляем кнопку "Enter AR"
-document.body.appendChild(ARButton.createButton(renderer));
-
 // Освещение
-const light = new THREE.DirectionalLight(0xffffff, 1);
+const light = new THREE.DirectionalLight(0x0000ff, 1);
 light.position.set(5, 10, 7.5);
 scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
-// Переменная для модели и анимации
-let model, mixer;
-
-// Raycaster для размещения модели на полу
-const raycaster = new THREE.Raycaster();
-const touchPoint = new THREE.Vector2();
-const controller = renderer.xr.getController(0);
-scene.add(controller);
-
-controller.addEventListener('select', () => {
-    if (!model) return;
-
-    raycaster.setFromCamera(touchPoint, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
-    
-    if (intersects.length > 0) {
-        model.position.copy(intersects[0].point);
-        model.visible = true;
-    }
-});
+const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+scene.add(ambientLight);
 
 // Загрузка модели GLB
 const loader = new GLTFLoader();
-loader.load(
-    'ANIME.glb', // Укажите путь к вашей модели
-    (gltf) => {
-        model = gltf.scene;
-        model.visible = false; // По умолчанию скрываем, пока не будет выбрано место
-        scene.add(model);
+let mixer; // Переменная для управления анимацией
 
-        if (gltf.animations.length) {
-            mixer = new THREE.AnimationMixer(model);
-            gltf.animations.forEach((clip) => {
-                mixer.clipAction(clip).play();
-            });
-        }
-    },
-    (xhr) => console.log(`Загрузка: ${(xhr.loaded / xhr.total) * 100}% завершено`),
-    (error) => console.error('Ошибка при загрузке модели:', error)
+loader.load(
+  'ANIME.glb', // Укажите путь к вашей модели
+  (gltf) => {
+    const model = gltf.scene;
+    scene.add(model);
+
+    // Настройка анимации
+    if (gltf.animations && gltf.animations.length) {
+      mixer = new THREE.AnimationMixer(model);
+      gltf.animations.forEach((clip) => {
+        mixer.clipAction(clip).play();
+      });
+    }
+  },
+  (xhr) => {
+    console.log(`Загрузка: ${(xhr.loaded / xhr.total) * 100}% завершено`);
+  },
+  (error) => {
+    console.error('Ошибка при загрузке модели:', error);
+  }
 );
 
-// Анимация
+// Контролы
+const controls = new OrbitControls(camera, renderer.domElement);
+
+// Анимация рендера
 const clock = new THREE.Clock();
+
 function animate() {
-    renderer.setAnimationLoop(() => {
-        if (mixer) mixer.update(clock.getDelta());
-        renderer.render(scene, camera);
-    });
+  requestAnimationFrame(animate);
+
+  // Обновление миксера анимации
+  if (mixer) {
+    mixer.update(clock.getDelta());
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
 }
+
+
+
+
 animate();
