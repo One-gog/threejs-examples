@@ -27,7 +27,7 @@ loader.load(
   'ANIME.glb',
   (gltf) => {
     model = gltf.scene;
-    model.visible = false; // Сначала скрываем модель, чтобы разместить на плоскости
+    model.visible = false; // Изначально скрываем
     model.scale.set(0.5, 0.5, 0.5);
     scene.add(model);
   },
@@ -35,29 +35,40 @@ loader.load(
   (error) => console.error('Ошибка загрузки модели:', error)
 );
 
-// Настраиваем hit-test для AR
+// Настраиваем hit-test
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
-function onXRFrame(time, frame) {
-  if (model && model.visible === false) {
-    const session = renderer.xr.getSession();
-    if (session && frame) {
+renderer.setAnimationLoop((time, frame) => {
+  if (!frame) return;
+
+  const session = renderer.xr.getSession();
+  if (session) {
+    if (!hitTestSourceRequested) {
+      session.requestReferenceSpace('viewer').then((referenceSpace) => {
+        session.requestHitTestSource({ space: referenceSpace }).then((source) => {
+          hitTestSource = source;
+        });
+      });
+      hitTestSourceRequested = true;
+    }
+
+    if (hitTestSource) {
       const referenceSpace = renderer.xr.getReferenceSpace();
-      const viewerPose = frame.getViewerPose(referenceSpace);
-      if (viewerPose) {
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0) {
-          const hit = hitTestResults[0];
-          const pose = hit.getPose(referenceSpace);
-          model.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
-          model.visible = true; // Показываем модель
-        }
+      const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+      if (hitTestResults.length > 0 && model) {
+        const hit = hitTestResults[0];
+        const pose = hit.getPose(referenceSpace);
+        model.position.set(
+          pose.transform.position.x,
+          pose.transform.position.y,
+          pose.transform.position.z
+        );
+        model.visible = true;
       }
     }
   }
-  renderer.render(scene, camera);
-}
 
-// Запускаем анимацию
-renderer.setAnimationLoop(onXRFrame);
+  renderer.render(scene, camera);
+});
