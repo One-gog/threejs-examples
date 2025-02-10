@@ -3,37 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-Frame AR.js</title>
+    <title>A-Frame WebAR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://unpkg.com/ar.js@1.7.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs>
-        <a-marker preset="hiro">
-            <a-entity id="model" 
-                      gltf-model="ANIME.glb" 
-                      position="0 0.5 0" 
-                      scale="1 1 1" 
-                      animation-mixer></a-entity>
-        </a-marker>
-        <a-entity camera></a-entity>
+        <a-camera position="0 1.6 0"></a-camera>
+        <a-box position="0 0 -2" rotation="0 45 0" color="blue"
+            animation="property: rotation; to: 0 405 0; loop: true; dur: 3000">
+        </a-box>
     </a-scene>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const model = document.querySelector("#model");
-
-            model.addEventListener("model-loaded", () => {
-                console.log("✅ Модель загружена!", model);
-            });
-
-            model.addEventListener("click", () => {
-                let scale = model.getAttribute("scale");
-                let newScale = scale.x === 1 ? { x: 1.5, y: 1.5, z: 1.5 } : { x: 1, y: 1, z: 1 };
-                model.setAttribute("scale", newScale);
-                console.log("🔄 Масштаб изменён:", newScale);
-            });
-        });
-    </script>
 </body>
 </html>
