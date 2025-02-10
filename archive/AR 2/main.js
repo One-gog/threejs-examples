@@ -19,56 +19,65 @@ light.position.set(5, 10, 7.5);
 scene.add(light);
 scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
-// Загружаем модель
+// Проверяем, что Three.js работает – добавляем тестовый куб
+const testCube = new THREE.Mesh(
+    new THREE.BoxGeometry(0.2, 0.2, 0.2),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+);
+testCube.position.set(0, 1, -1);
+scene.add(testCube);
+
+// Загружаем 3D модель
 const loader = new GLTFLoader();
 let model = null;
 
 loader.load(
-  'ANIME.glb',
-  (gltf) => {
-    model = gltf.scene;
-    model.visible = false; // Изначально скрываем
-    model.scale.set(0.5, 0.5, 0.5);
-    scene.add(model);
-  },
-  undefined,
-  (error) => console.error('Ошибка загрузки модели:', error)
+    'ANIME.glb',
+    (gltf) => {
+        model = gltf.scene;
+        model.visible = false;
+        model.scale.set(0.5, 0.5, 0.5);
+        scene.add(model);
+        console.log('Модель загружена');
+    },
+    undefined,
+    (error) => console.error('Ошибка загрузки модели:', error)
 );
 
-// Настраиваем hit-test
+// Настройка hit-test для AR
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
 renderer.setAnimationLoop((time, frame) => {
-  if (!frame) return;
+    if (!frame) return;
 
-  const session = renderer.xr.getSession();
-  if (session) {
-    if (!hitTestSourceRequested) {
-      session.requestReferenceSpace('viewer').then((referenceSpace) => {
-        session.requestHitTestSource({ space: referenceSpace }).then((source) => {
-          hitTestSource = source;
-        });
-      });
-      hitTestSourceRequested = true;
+    const session = renderer.xr.getSession();
+    if (session) {
+        if (!hitTestSourceRequested) {
+            session.requestReferenceSpace('viewer').then((referenceSpace) => {
+                session.requestHitTestSource({ space: referenceSpace }).then((source) => {
+                    hitTestSource = source;
+                });
+            });
+            hitTestSourceRequested = true;
+        }
+
+        if (hitTestSource) {
+            const referenceSpace = renderer.xr.getReferenceSpace();
+            const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+            if (hitTestResults.length > 0 && model) {
+                const hit = hitTestResults[0];
+                const pose = hit.getPose(referenceSpace);
+                model.position.set(
+                    pose.transform.position.x,
+                    pose.transform.position.y,
+                    pose.transform.position.z
+                );
+                model.visible = true;
+            }
+        }
     }
 
-    if (hitTestSource) {
-      const referenceSpace = renderer.xr.getReferenceSpace();
-      const hitTestResults = frame.getHitTestResults(hitTestSource);
-
-      if (hitTestResults.length > 0 && model) {
-        const hit = hitTestResults[0];
-        const pose = hit.getPose(referenceSpace);
-        model.position.set(
-          pose.transform.position.x,
-          pose.transform.position.y,
-          pose.transform.position.z
-        );
-        model.visible = true;
-      }
-    }
-  }
-
-  renderer.render(scene, camera);
+    renderer.render(scene, camera);
 });
