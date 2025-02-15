@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
@@ -46,6 +45,22 @@ if (isIOS) {
         'ANIME.glb', // Укажите путь к модели
         (gltf) => {
             model = gltf.scene;
+
+            // Устанавливаем размер модели по умолчанию
+            const box = new THREE.Box3().setFromObject(model);
+            const size = new THREE.Vector3();
+            box.getSize(size);
+
+            // Масштабируем модель до нужного размера (например, 1 метр по наибольшей оси)
+            const maxSize = Math.max(size.x, size.y, size.z);
+            const scale = 1 / maxSize; // Масштабируем так, чтобы наибольшая ось была 1 метр
+            model.scale.set(scale, scale, scale);
+
+            // Центрируем модель
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            model.position.sub(center);
+
             scene.add(model);
 
             if (gltf.animations.length) {
