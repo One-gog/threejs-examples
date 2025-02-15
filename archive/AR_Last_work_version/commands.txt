@@ -1,0 +1,5 @@
+ 1 try { . "c:\Users\xkarp\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+   6 npm install --save three
+   7 npm install --save-dev vite
+   8 npx vite
+   9 npx vite  запуск сервера 
