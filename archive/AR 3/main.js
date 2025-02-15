@@ -1,66 +1,71 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
-// Создание сцены, камеры и рендера
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.5, 5);
+// Проверяем, iOS или нет
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+// Если iPhone → Открываем AR Quick Look
+if (isIOS) {
+    const usdzUrl = 'ANIME.usdz'; // USDZ-модель (экспортируй из Blender)
+    const arLink = document.createElement('a');
+    arLink.rel = 'ar';
+    arLink.href = usdzUrl;
+    arLink.innerHTML = '👀 Открыть в AR';
+    arLink.style.position = 'absolute';
+    arLink.style.top = '10px';
+    arLink.style.left = '10px';
+    arLink.style.padding = '10px';
+    arLink.style.background = 'white';
+    arLink.style.color = 'black';
+    arLink.style.borderRadius = '5px';
+    document.body.appendChild(arLink);
+} else {
+    // WebXR для Android
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
 
-// Освещение
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 10, 7.5);
-scene.add(light);
+    // Добавляем кнопку "Enter AR"
+    document.body.appendChild(ARButton.createButton(renderer));
 
-const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-scene.add(ambientLight);
+    // Освещение
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 10, 7.5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
-// Загрузка модели GLB
-const loader = new GLTFLoader();
-let mixer; // Переменная для управления анимацией
+    // Загрузка модели GLB
+    const loader = new GLTFLoader();
+    let model, mixer;
 
-loader.load(
-  'ANIME.glb', // Укажите путь к вашей модели
-  (gltf) => {
-    const model = gltf.scene;
-    scene.add(model);
+    loader.load(
+        'ANIME.glb', // Укажите путь к модели
+        (gltf) => {
+            model = gltf.scene;
+            scene.add(model);
 
-    // Настройка анимации
-    if (gltf.animations && gltf.animations.length) {
-      mixer = new THREE.AnimationMixer(model);
-      gltf.animations.forEach((clip) => {
-        mixer.clipAction(clip).play();
-      });
+            if (gltf.animations.length) {
+                mixer = new THREE.AnimationMixer(model);
+                gltf.animations.forEach((clip) => {
+                    mixer.clipAction(clip).play();
+                });
+            }
+        },
+        (xhr) => console.log(`Загрузка: ${(xhr.loaded / xhr.total) * 100}% завершено`),
+        (error) => console.error('Ошибка при загрузке модели:', error)
+    );
+
+    // Анимация
+    const clock = new THREE.Clock();
+    function animate() {
+        renderer.setAnimationLoop(() => {
+            if (mixer) mixer.update(clock.getDelta());
+            renderer.render(scene, camera);
+        });
     }
-  },
-  (xhr) => {
-    console.log(`Загрузка: ${(xhr.loaded / xhr.total) * 100}% завершено`);
-  },
-  (error) => {
-    console.error('Ошибка при загрузке модели:', error);
-  }
-);
-
-// Контролы
-const controls = new OrbitControls(camera, renderer.domElement);
-
-// Анимация рендера
-const clock = new THREE.Clock();
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  // Обновление миксера анимации
-  if (mixer) {
-    mixer.update(clock.getDelta());
-  }
-
-  controls.update();
-  renderer.render(scene, camera);
+    animate();
 }
-
-animate();
