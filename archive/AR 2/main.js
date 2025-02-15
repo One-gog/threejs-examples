@@ -15,7 +15,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// Кнопка "Войти в AR"
+// Кнопка входа в AR
 document.body.appendChild(ARButton.createButton(renderer));
 
 // Освещение
@@ -27,14 +27,12 @@ scene.add(new THREE.AmbientLight(0x404040, 0.5));
 // Загрузка модели GLB
 const loader = new GLTFLoader();
 loader.load(
-    'ANIME.glb', // Замените на свой путь
+    'ANIME.glb',
     (gltf) => {
         model = gltf.scene;
-        model.scale.set(5, 5, 5); // Увеличиваем модель в 5 раз
-        model.visible = false; // Прячем, пока не найдём пол
+        model.visible = false; // Скрываем модель, пока не найдём плоскость
         scene.add(model);
 
-        // Анимация модели
         if (gltf.animations.length) {
             mixer = new THREE.AnimationMixer(model);
             gltf.animations.forEach((clip) => {
@@ -43,10 +41,10 @@ loader.load(
         }
     },
     undefined,
-    (error) => console.error('Ошибка загрузки модели:', error)
+    (error) => console.error('Ошибка при загрузке модели:', error)
 );
 
-// Функция анимации
+// Функция рендера
 const clock = new THREE.Clock();
 function animate() {
     renderer.setAnimationLoop((timestamp, frame) => {
@@ -56,7 +54,7 @@ function animate() {
             const referenceSpace = renderer.xr.getReferenceSpace();
             const session = renderer.xr.getSession();
 
-            if (!hitTestSourceRequested) {
+            if (hitTestSourceRequested === false) {
                 session.requestReferenceSpace('viewer').then((referenceSpace) => {
                     session.requestHitTestSource({ space: referenceSpace }).then((source) => {
                         hitTestSource = source;
@@ -78,12 +76,8 @@ function animate() {
                     const pose = hit.getPose(referenceSpace);
 
                     if (model) {
-                        model.position.set(
-                            pose.transform.position.x,
-                            pose.transform.position.y,
-                            pose.transform.position.z
-                        );
-                        model.visible = true; // Показываем модель
+                        model.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
+                        model.visible = true; // Показываем модель, когда нашли плоскость
                     }
                 }
             }
