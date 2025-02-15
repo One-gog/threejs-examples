@@ -53,7 +53,7 @@ if (isIOS) {
 
             // Масштабируем модель до нужного размера (например, 1 метр по наибольшей оси)
             const maxSize = Math.max(size.x, size.y, size.z);
-            const scale = 1 / maxSize; // Масштабируем так, чтобы наибольшая ось была 1 метр
+            const scale = 10 / maxSize; // Масштабируем так, чтобы наибольшая ось была 1 метр
             model.scale.set(scale, scale, scale);
 
             // Центрируем модель
