@@ -1,16 +1,16 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
-// Проверяем, iOS или нет
+// Check if the device is iOS
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-// Если iPhone → Открываем AR Quick Look
+// If it's an iPhone → Open AR Quick Look
 if (isIOS) {
-    const usdzUrl = 'ANIME.usdz'; // USDZ-модель (экспортируй из Blender)
+    const usdzUrl = 'ANIME.usdz'; // USDZ model (export from Blender)
     const arLink = document.createElement('a');
     arLink.rel = 'ar';
     arLink.href = usdzUrl;
-    arLink.innerHTML = '👀 Открыть в AR';
+    arLink.innerHTML = '👀 Open in AR';
     arLink.style.position = 'absolute';
     arLink.style.top = '10px';
     arLink.style.left = '10px';
@@ -20,7 +20,7 @@ if (isIOS) {
     arLink.style.borderRadius = '5px';
     document.body.appendChild(arLink);
 } else {
-    // WebXR для Android
+    // WebXR for Android
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera();
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -28,59 +28,32 @@ if (isIOS) {
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
 
-    // Добавляем кнопку "Enter AR"
+    // Add "Enter AR" button
     document.body.appendChild(ARButton.createButton(renderer));
 
-    // Освещение
+    // Lighting
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(5, 10, 7.5);
     scene.add(light);
     scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
-    // Загрузка модели GLB
+    // Load GLB model
     const loader = new GLTFLoader();
     let model, mixer;
 
     loader.load(
-        'ANIME.glb', // Укажите путь к модели
+        'ANIME.glb', // Specify the path to the model
         (gltf) => {
             model = gltf.scene;
 
-            // Устанавливаем размер модели по умолчанию
+            // Set default size for the model
             const box = new THREE.Box3().setFromObject(model);
             const size = new THREE.Vector3();
             box.getSize(size);
-
-            // Масштабируем модель до нужного размера (например, 1 метр по наибольшей оси)
-            const maxSize = Math.max(size.x, size.y, size.z);
-            const scale = 10 / maxSize; // Масштабируем так, чтобы наибольшая ось была 1 метр
-            model.scale.set(scale, scale, scale);
-
-            // Центрируем модель
-            const center = new THREE.Vector3();
-            box.getCenter(center);
-            model.position.sub(center);
+            const scaleFactor = 400 / Math.max(size.x, size.y, size.z);
+            model.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
             scene.add(model);
-
-            if (gltf.animations.length) {
-                mixer = new THREE.AnimationMixer(model);
-                gltf.animations.forEach((clip) => {
-                    mixer.clipAction(clip).play();
-                });
-            }
-        },
-        (xhr) => console.log(`Загрузка: ${(xhr.loaded / xhr.total) * 100}% завершено`),
-        (error) => console.error('Ошибка при загрузке модели:', error)
+        }
     );
-
-    // Анимация
-    const clock = new THREE.Clock();
-    function animate() {
-        renderer.setAnimationLoop(() => {
-            if (mixer) mixer.update(clock.getDelta());
-            renderer.render(scene, camera);
-        });
-    }
-    animate();
 }
