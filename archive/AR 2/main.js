@@ -1,10 +1,9 @@
+import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
-import * as THREE from 'three';
+
 // Check if the device is iOS
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-const scene = new THREE.Scene();
 
 // If it's an iPhone → Open AR Quick Look
 if (isIOS) {
@@ -23,7 +22,7 @@ if (isIOS) {
     document.body.appendChild(arLink);
 } else {
     // WebXR for Android
-    // const scene = new THREE.Scene();
+    const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera();
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
