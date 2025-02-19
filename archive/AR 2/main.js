@@ -5,6 +5,13 @@ import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 // Check if the device is iOS
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+if (gltf.animations.length > 0) {
+    mixer = new THREE.AnimationMixer(model);
+    gltf.animations.forEach((clip) => {
+        mixer.clipAction(clip).play();
+    });
+}
+
 // If it's an iPhone → Open AR Quick Look
 if (isIOS) {
     const usdzUrl = 'ANIME.usdz'; // USDZ model (export from Blender)
