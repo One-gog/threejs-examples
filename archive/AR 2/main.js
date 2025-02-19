@@ -69,12 +69,15 @@ if (isIOS) {
         if (mixer) {
             mixer.update(delta);
         }
-        renderer.setAnimationLoop(animate);
         renderer.render(scene, camera);
     }
-    animate();
 
-    // 🔘 КНОПКА ДЛЯ ВКЛЮЧЕНИЯ АНИМАЦИИ
+    // Подключаем анимацию к WebXR
+    renderer.setAnimationLoop(() => {
+        animate();
+    });
+
+    // 🔘 КНОПКА ДЛЯ ВКЛЮЧЕНИЯ АНИМАЦИИ В WEBXR
     const button = document.createElement('button');
     button.innerHTML = '▶ Запустить анимацию';
     Object.assign(button.style, {
