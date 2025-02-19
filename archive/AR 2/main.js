@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
-// ✅ iPhone теперь использует WebXR вместо AR Quick Look
+console.log('📱 WebXR поддерживается:', navigator.xr);
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 1.6, 3);
@@ -12,8 +13,13 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-const arButton = ARButton.createButton(renderer);
-document.body.appendChild(arButton);
+// ✅ Исправленный ARButton с WebXR-проверкой
+if (navigator.xr) {
+    const arButton = ARButton.createButton(renderer);
+    document.body.appendChild(arButton);
+} else {
+    console.warn('⚠️ WebXR не поддерживается на этом устройстве!');
+}
 
 // ✅ Освещение
 const light = new THREE.DirectionalLight(0xffffff, 1);
