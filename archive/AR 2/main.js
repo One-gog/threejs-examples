@@ -41,18 +41,15 @@ if (isIOS) {
         model = gltf.scene;
         scene.add(model);
 
-        // Проверяем и выводим анимации в консоль
-        console.log('Анимации в модели:', gltf.animations.map(a => a.name));
+        console.log('Анимации в модели:', gltf.animations);
 
-        // Если анимации есть, запускаем
         if (gltf.animations.length > 0) {
-            mixer = new THREE.AnimationMixer(model);
-
-            gltf.animations.forEach((clip) => {
-                const action = mixer.clipAction(clip);
-                action.setLoop(THREE.LoopRepeat); // Повторение анимации
-                action.play();
-            });
+            mixer = new THREE.AnimationMixer(model.children[0] || model);
+            const clip = gltf.animations[0]; 
+            const action = mixer.clipAction(clip);
+            action.setLoop(THREE.LoopRepeat);
+            action.clampWhenFinished = true;
+            action.play();
         }
     });
 
