@@ -41,15 +41,27 @@ if (isIOS) {
         model = gltf.scene;
         scene.add(model);
 
-        console.log('Анимации в модели:', gltf.animations);
+        console.log('🔍 Загружена модель:', gltf);
+        console.log('Объекты в сцене:', model.children.map(c => c.name));
+        console.log('Анимации:', gltf.animations.map(a => a.name));
+
+        // Проверяем, есть ли кости в модели
+        model.traverse((obj) => {
+            if (obj.isBone) {
+                console.log('🦴 Найдена кость:', obj.name);
+            }
+        });
 
         if (gltf.animations.length > 0) {
-            mixer = new THREE.AnimationMixer(model.children[0] || model);
-            const clip = gltf.animations[0]; 
-            const action = mixer.clipAction(clip);
-            action.setLoop(THREE.LoopRepeat);
-            action.clampWhenFinished = true;
-            action.play();
+            mixer = new THREE.AnimationMixer(model);
+            gltf.animations.forEach((clip) => {
+                console.log('🎬 Запускаем анимацию:', clip.name);
+                const action = mixer.clipAction(clip);
+                action.setLoop(THREE.LoopRepeat);
+                action.play();
+            });
+        } else {
+            console.warn('⚠️ В модели нет анимаций!');
         }
     });
 
