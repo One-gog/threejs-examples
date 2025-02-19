@@ -34,7 +34,7 @@ if (isIOS) {
     scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
     const loader = new GLTFLoader();
-    let model, mixer;
+    let model, mixer, actions = {};
     const clock = new THREE.Clock();
 
     loader.load('ANIME.glb', (gltf) => {
@@ -45,21 +45,20 @@ if (isIOS) {
         console.log('Объекты в сцене:', model.children.map(c => c.name));
         console.log('Анимации:', gltf.animations.map(a => a.name));
 
-        // Проверяем, есть ли кости в модели
-        model.traverse((obj) => {
-            if (obj.isBone) {
-                console.log('🦴 Найдена кость:', obj.name);
-            }
-        });
-
         if (gltf.animations.length > 0) {
             mixer = new THREE.AnimationMixer(model);
-            gltf.animations.forEach((clip) => {
-                console.log('🎬 Запускаем анимацию:', clip.name);
+
+            gltf.animations.forEach((clip, index) => {
+                console.log(`🎬 Анимация ${index}: ${clip.name}`);
                 const action = mixer.clipAction(clip);
                 action.setLoop(THREE.LoopRepeat);
-                action.play();
+                actions[clip.name] = action;
             });
+
+            // Принудительно запускаем первую анимацию
+            const firstAnimation = gltf.animations[0].name;
+            console.log(`⏯ Запускаем анимацию: ${firstAnimation}`);
+            actions[firstAnimation].play();
         } else {
             console.warn('⚠️ В модели нет анимаций!');
         }
@@ -74,4 +73,25 @@ if (isIOS) {
         renderer.render(scene, camera);
     }
     animate();
+
+    // 🔘 КНОПКА ДЛЯ ВКЛЮЧЕНИЯ АНИМАЦИИ
+    const button = document.createElement('button');
+    button.innerHTML = '▶ Запустить анимацию';
+    Object.assign(button.style, {
+        position: 'absolute', bottom: '10px', left: '10px',
+        padding: '10px 20px', background: '#28a745', color: 'white',
+        fontSize: '16px', border: 'none', borderRadius: '5px',
+        cursor: 'pointer'
+    });
+
+    button.onclick = () => {
+        if (mixer && Object.keys(actions).length > 0) {
+            console.log('🔘 Включаем анимацию вручную');
+            Object.values(actions).forEach(action => action.play());
+        } else {
+            console.warn('⚠️ Анимация еще не загружена!');
+        }
+    };
+
+    document.body.appendChild(button);
 }
