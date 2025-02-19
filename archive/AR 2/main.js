@@ -39,26 +39,28 @@ if (isIOS) {
 
     loader.load('ANIME.glb', (gltf) => {
         model = gltf.scene;
-
-        const box = new THREE.Box3().setFromObject(model);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const scaleFactor = 400 / Math.max(size.x, size.y, size.z);
-        model.scale.set(scaleFactor, scaleFactor, scaleFactor);
-        model.position.set(0, 0, -1);
-
         scene.add(model);
 
+        // Проверяем и выводим анимации в консоль
+        console.log('Анимации в модели:', gltf.animations.map(a => a.name));
+
+        // Если анимации есть, запускаем
         if (gltf.animations.length > 0) {
             mixer = new THREE.AnimationMixer(model);
+
             gltf.animations.forEach((clip) => {
-                mixer.clipAction(clip).play();
+                const action = mixer.clipAction(clip);
+                action.setLoop(THREE.LoopRepeat); // Повторение анимации
+                action.play();
             });
         }
     });
 
     function animate() {
-        if (mixer) mixer.update(clock.getDelta());
+        const delta = clock.getDelta();
+        if (mixer) {
+            mixer.update(delta);
+        }
         renderer.setAnimationLoop(animate);
         renderer.render(scene, camera);
     }
