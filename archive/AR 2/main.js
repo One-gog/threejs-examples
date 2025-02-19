@@ -2,7 +2,23 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
+// 🔍 Проверяем поддержку WebXR
 console.log('📱 WebXR поддерживается:', navigator.xr);
+if (!navigator.xr) {
+    alert('⚠️ WebXR не поддерживается! Включите WebXR в Safari.');
+}
+
+// 📸 Запрос камеры (Safari требует разрешения перед WebXR)
+async function requestCameraAccess() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        console.log('📸 Доступ к камере разрешен:', stream);
+    } catch (error) {
+        console.error('❌ Ошибка доступа к камере:', error);
+        alert('⚠️ Разрешите доступ к камере в настройках Safari.');
+    }
+}
+requestCameraAccess();
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -13,7 +29,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ✅ Исправленный ARButton с WebXR-проверкой
+// ✅ Добавляем кнопку "Enter AR"
 if (navigator.xr) {
     const arButton = ARButton.createButton(renderer);
     document.body.appendChild(arButton);
